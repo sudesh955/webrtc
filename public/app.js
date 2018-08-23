@@ -20,6 +20,10 @@ function main() {
   socket.on('got-call-offer', gotCallOffer);
   socket.on('got-call-answer', gotCallAnswer);
   socket.on('got-ice-candidate', gotIceCandidate);
+
+  document.getElementById('client-toggle-btn').addEventListener('click', function () {
+    document.getElementById('clients').classList.toggle('hide');
+  });
 }
 
 function setOnlineClients(clients) {
@@ -50,10 +54,17 @@ function startCall(client) {
   if (call !== null) return;
   call = {
     client: client,
+    stream: new MediaStream,
     pc: createRTCPeerConnection(),
   };
+  var remoteVideo = document.getElementById('remote-video');
+  remoteVideo.srcObject = call.stream;
+  remoteVideo.play();
+  setLocalStreams(createOffer);
+}
+
+function createOffer() {
   call.pc.createOffer(localOfferCreated, onError, mediaConstraints);
-  setLocalStreams();
 }
 
 function localOfferCreated(offer) {
@@ -77,14 +88,22 @@ function gotCallOffer(client, offer) {
   console.log('receiving call', offer);
   call = {
     client: client,
+    stream: new MediaStream,
     pc: createRTCPeerConnection(),
   };
+  var remoteVideo = document.getElementById('remote-video');
+  remoteVideo.srcObject = call.stream;
+  remoteVideo.play();
   call.pc.setRemoteDescription(new RTCSessionDescription(offer), createCallAnswer, onError);
 }
 
 function createCallAnswer() {
   console.log('preparing answer');
-  call.pc.createAnswer(onAnswerCreated, onError);
+  setLocalStreams(createAnswer);
+}
+
+function createAnswer() {
+  call.pc.createAnswer(onAnswerCreated, onError, mediaConstraints);
 }
 
 function onAnswerCreated(answer) {
@@ -115,6 +134,7 @@ function onError() {
 function createRTCPeerConnection () {
   var pc = new RTCPeerConnection();
   pc.addEventListener('icecandidate', onIceCandidate);
+  pc.addEventListener('track', onGotTrack);
   return pc;
 }
 
@@ -129,10 +149,25 @@ function addedIceCandidate() {
   console.log('added icecandidate');
 }
 
-function setLocalStreams() {
-  console.log(navigator.mediaDevices.getUserMedia({audio: true, video: true}).then(gotLocalStreams, onError));
+function setLocalStreams(callback) {
+  navigator.mediaDevices.getUserMedia({video: true, audio: true})
+    .then(gotLocalStreams, onError)
+    .then(callback);
 }
 
 function gotLocalStreams(stream) {
-  console.log(stream);
+  var localStream = new MediaStream;
+  stream.getTracks().forEach(function (track){
+    if (track.kind === 'video') {
+      localStream.addTrack(track);
+    }
+    call.pc.addTrack(track, stream);
+  });
+  var localVideo = document.getElementById('local-video');
+  localVideo.srcObject = stream;
+  localVideo.play();
+}
+
+function onGotTrack(event) {
+  call.stream.addTrack(event.track);
 }

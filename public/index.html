@@ -6,7 +6,12 @@
 	<link rel="stylesheet" type="text/css" href="/static/app.css"/>
 </head>
 <body onload="main()">
-	<div id="clients"></div>
+	<div id="client-container">
+		<div id="clients"></div>
+		<button id="client-toggle-btn">Toggle clients</button>
+	</div>
+	<video id="local-video"></video>
+	<video id="remote-video"></video>
 	<script type="text/javascript" src="/static/adapter.js"></script>
 	<script type="text/javascript" src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript" src="/static/ejs.min.js"></script>

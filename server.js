@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const
+	fs = require('fs'),
 	path = require('path'),
 	express = require('express');
 
@@ -10,7 +11,10 @@ const app = express();
 app.use('/static', express.static(path.join(__dirname, 'public')));
 app.use('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
 
-const server = require('http').createServer(app);
+const server = require('https').createServer({
+	key: fs.readFileSync(path.join(__dirname, 'certs/my.key')),
+	cert: fs.readFileSync(path.join(__dirname, 'certs/my.crt')),
+}, app);
 const io = require('socket.io')(server);
 server.listen(3000);
 
@@ -32,4 +36,4 @@ function sendEvent(to, event, ...args) {
 
 function disconnect() {
 	io.sockets.emit('remove-online-client', this.id);
-}
+}	
